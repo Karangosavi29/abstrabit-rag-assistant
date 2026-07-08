@@ -1,18 +1,37 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenAI, Type } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-export async function embedText(text: string): Promise<number[]> {
-  const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-  const res = await model.embedContent(text);
-  return res.embedding.values;
+// text-embedding-004 was shut down by Google on Jan 14, 2026. Its replacement,
+// gemini-embedding-001, defaults to 3072-dim output, so we explicitly request
+// 768 dimensions to match the `vector(768)` column in supabase/schema.sql.
+const EMBEDDING_MODEL = "gemini-embedding-001";
+export const EMBEDDING_DIM = 768;
+
+// gemini-1.5-flash is fully shut down (all Gemini 1.0/1.5 models 404 now).
+// gemini-flash-latest is Google's auto-updated alias to their current
+// recommended flash model, which avoids hardcoding a version that will
+// itself be deprecated on a schedule we don't control.
+const CHAT_MODEL = "gemini-flash-latest";
+
+export async function embedText(
+  text: string,
+  taskType: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY" = "RETRIEVAL_QUERY"
+): Promise<number[]> {
+  const res = await ai.models.embedContent({
+    model: EMBEDDING_MODEL,
+    contents: text,
+    config: { outputDimensionality: EMBEDDING_DIM, taskType }
+  });
+  const values = res.embeddings?.[0]?.values;
+  if (!values) throw new Error("Gemini returned no embedding values");
+  return values;
 }
 
 export async function embedBatch(texts: string[]): Promise<number[][]> {
-
   const out: number[][] = [];
   for (const t of texts) {
-    out.push(await embedText(t));
+    out.push(await embedText(t, "RETRIEVAL_DOCUMENT"));
   }
   return out;
 }
@@ -23,11 +42,11 @@ export const toolDeclarations = [
     description:
       "Save a follow-up task or action item into the current workspace's task list.",
     parameters: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
-        title: { type: SchemaType.STRING, description: "Short task title" },
+        title: { type: Type.STRING, description: "Short task title" },
         details: {
-          type: SchemaType.STRING,
+          type: Type.STRING,
           description: "Optional longer description or context for the task"
         }
       },
@@ -39,10 +58,10 @@ export const toolDeclarations = [
     description:
       "Send a short summary message to the workspace's connected Slack/Discord channel via webhook.",
     parameters: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
         summary: {
-          type: SchemaType.STRING,
+          type: Type.STRING,
           description: "The summary text to post to the channel"
         }
       },
@@ -51,10 +70,13 @@ export const toolDeclarations = [
   }
 ] as const;
 
-export function getChatModel() {
-  return genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    tools: [{ functionDeclarations: toolDeclarations as any }]
+export function createChat() {
+  return ai.chats.create({
+    model: CHAT_MODEL,
+    config: {
+      systemInstruction: SYSTEM_INSTRUCTION,
+      tools: [{ functionDeclarations: toolDeclarations as any }]
+    }
   });
 }
 

@@ -1,0 +1,12 @@
+Project Nightingale -- Internal Roadmap (Workspace A)
+
+Project Nightingale is our codename for the Q3 customer-onboarding revamp.
+
+The distinctive fact for isolation testing: the internal launch passphrase for
+Project Nightingale is "silver-heron-9". This value only exists in Workspace A's
+documents and must never appear when asking questions from any other workspace.
+
+Team leads: Priya (backend), Marcus (frontend), Dana (design).
+Target launch window: last week of September.
+Key risk: the new onboarding flow depends on the billing team's API v3 migration,
+which is currently two weeks behind schedule.

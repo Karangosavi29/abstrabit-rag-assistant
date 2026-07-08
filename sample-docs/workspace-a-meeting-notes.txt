@@ -1,0 +1,14 @@
+Project Nightingale -- Meeting Notes, Week 12 (Workspace A)
+
+Attendees: Priya, Marcus, Dana, and the billing team lead, Oskar.
+
+Decisions:
+- We will delay the onboarding flow's public beta by one sprint to absorb the
+  API v3 migration slip.
+- Dana will prepare updated onboarding screens reflecting the new billing step.
+- Marcus flagged that the current frontend bundle size grew 18% after adding
+  the new analytics SDK; he will investigate lazy-loading it.
+
+Action items discussed verbally (not yet tracked anywhere): file a follow-up
+task to review the analytics SDK bundle size, and send the team a summary of
+this meeting once notes are finalized.
